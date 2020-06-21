@@ -487,6 +487,7 @@ ActiveRecord::Schema.define(version: 2021_05_28_112148) do
     t.datetime "updated_at", null: false
     t.boolean "graduation_work", default: false, null: false
     t.index ["user_id", "title"], name: "index_works_on_user_id_and_title", unique: true
+    t.boolean "graduation_work", default: false, null: false
     t.index ["user_id"], name: "index_works_on_user_id"
   end
 
