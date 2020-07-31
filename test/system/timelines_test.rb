@@ -63,12 +63,6 @@ class TimelinesTest < ApplicationSystemTestCase
     assert_no_text "勉強中です"
   end
 
-  test "other user cannot edit and destroy timeline" do
-    visit "/timelines"
-    assert_no_selector "button", text: "編集"
-    assert_no_selector "button", text: "削除"
-  end
-
   test "submit_button is enabled after a post is done" do
     visit "/timelines"
     fill_in("new_timeline[description]", with: "Action Cableについて勉強中です")
@@ -79,5 +73,22 @@ class TimelinesTest < ApplicationSystemTestCase
     fill_in("new_timeline[description]", with: "Vue.jsについて勉強中です")
     click_button "投稿する"
     assert_text "Vue.jsについて勉強中です"
+  end
+
+  test "when visit timelines page, 20 timelines are loaded. furthermore, when scroll to bottom, past 20 timelines are loaded." do
+    visit "/timelines"
+
+    # 分報が読み込まれるのを待つために1秒間sleep
+    sleep 1
+
+    assert_equal(20, all(:css, ".thread-timeline").size)
+
+    # bottomまでスクロール
+    page.execute_script "window.scrollTo(0, document.body.scrollHeight)"
+
+    # 過去の分報が読み込まれるのを待つために1秒間sleep
+    sleep 1
+
+    assert_equal(40, all(:css, ".thread-timeline").size)
   end
 end

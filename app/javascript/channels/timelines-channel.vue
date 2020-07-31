@@ -33,8 +33,13 @@
         description: '',
         timelines: [],
         timelinesChannel: null,
-        buttonDisabled: false
+        buttonDisabled: false,
+        loading: false,
+        subscribed: false
       }
+    },
+    mounted () {
+      window.addEventListener('scroll', this.handleScroll, true)
     },
     created () {
       this.timelinesChannel = this.$cable.subscriptions.create({channel: this.selectChannel(), user_id: this.userId}, {
@@ -48,8 +53,9 @@
               this.currentUser = data.current_user
               this.timelines = []
               data.timelines.forEach((timeline) => {
-                this.timelines.unshift(timeline)
+                this.timelines.push(timeline)
               });
+              this.subscribed = true
               break
             case 'failed_to_subscribe':
               console.warn('Failed to subscribe');
@@ -81,6 +87,18 @@
             case 'failed_to_delete_timeline':
               console.warn('Failed to delete timeline');
               break
+            case 'send_past_timelines':
+              if (data.timelines.length === 0) {
+                window.removeEventListener('scroll', this.handleScroll, true)
+              } else {
+                data.timelines.forEach((timeline) => {
+                  this.timelines.push(timeline)
+                })
+              }
+              this.$nextTick(() => {
+                this.loading = false
+              })
+              break
           }
         }
       })
@@ -106,6 +124,21 @@
           return 'TimelinesChannel'
         } else {
           return 'Users::TimelinesChannel'
+        }
+      },
+      handleScroll: function () {
+        if (!this.loading && this.subscribed) {
+          /*
+            「次の等価式は、要素がスクロールの終点にあると true になり、それ以外は false になります。
+            element.scrollHeight - element.scrollTop === element.clientHeight」
+
+            Element.scrollHeight - Web API | MDN (https://developer.mozilla.org/ja/docs/Web/API/Element/scrollHeight)
+          */
+          if (document.documentElement.scrollHeight - document.documentElement.scrollTop === document.documentElement.clientHeight) {
+            this.loading = true
+            let oldest_timeline_on_timelines_page = { id: this.timelines.slice(-1)[0].id }
+            this.timelinesChannel.perform('send_past_timelines', oldest_timeline_on_timelines_page)
+          }
         }
       }
     },
